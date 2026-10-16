@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#173d35">
+<title>StudyFlow — Study Planner</title>
+<style>
+:root{color-scheme:light;--green:#173d35;--mint:#dff3e9;--paper:#f6f8f5;--ink:#182522;--muted:#64716c;--line:#e0e7e2;--white:#fff;--orange:#f1b56a}
+:root[data-theme="dark"]{color-scheme:dark;--green:#101e1b;--mint:#263e36;--paper:#111715;--ink:#edf4f0;--muted:#a8b7af;--line:#34423b;--white:#1b2420;--orange:#f1b56a}
+:root[data-theme="dark"] .stat,:root[data-theme="dark"] .panel,:root[data-theme="dark"] nav button{background:var(--white);color:var(--ink)}
+:root[data-theme="dark"] nav button.active{background:var(--green);color:white;border-color:var(--green)}
+:root[data-theme="dark"] input,:root[data-theme="dark"] select{background:#202b26;color:var(--ink);border-color:#43544a}
+:root[data-theme="dark"] .day{background:#1b2420}
+:root[data-theme="dark"] .day.today{background:#1d3328;border-color:#53846a}
+:root[data-theme="dark"] .progress{background:#303b35}
+:root[data-theme="dark"] .task .remove{color:#ff9f91}
+.theme-row{display:flex;justify-content:flex-end;align-items:center;gap:9px;padding:10px 18px 0;color:var(--muted);font-size:13px}
+.theme-switch{position:relative;display:inline-block;width:48px;height:27px;flex-shrink:0}
+.theme-switch input{opacity:0;width:0;height:0;position:absolute}
+.theme-slider{position:absolute;inset:0;cursor:pointer;background:#aebbb3;border-radius:99px;transition:.2s}
+.theme-slider:before{content:"";position:absolute;width:21px;height:21px;left:3px;top:3px;background:white;border-radius:50%;transition:.2s;box-shadow:0 1px 3px #0003}
+.theme-switch input:checked+.theme-slider{background:#479574}
+.theme-switch input:checked+.theme-slider:before{transform:translateX(21px)}
+.theme-switch input:focus-visible+.theme-slider{outline:3px solid #80bda0;outline-offset:3px}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px system-ui,-apple-system,Segoe UI,sans-serif}
+header{background:var(--green);color:white;padding:24px 18px 30px;border-radius:0 0 26px 26px}header small{opacity:.8}header h1{margin:6px 0;font-size:28px}header p{margin:0;opacity:.85}
+main{max-width:720px;margin:auto;padding:16px 14px 90px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:-12px}.stat,.panel{background:white;border:1px solid var(--line);border-radius:17px;padding:14px}.stat strong{display:block;font-size:23px}.stat span{font-size:12px;color:var(--muted)}
+nav{display:flex;gap:8px;overflow:auto;margin:18px 0}nav button{border:1px solid var(--line);background:white;border-radius:999px;padding:10px 14px;white-space:nowrap;color:var(--ink)}nav button.active{background:var(--green);color:white;border-color:var(--green)}
+h2{font-size:19px;margin:8px 0 12px}.panel{margin:12px 0}.muted{color:var(--muted);font-size:13px}
+form .fields{display:grid;grid-template-columns:1fr 1fr;gap:9px}input,select,button{font:inherit}input,select{width:100%;padding:12px;border:1px solid #d4ded7;border-radius:11px;background:white;color:var(--ink)}input[type=checkbox]{width:19px;height:19px;accent-color:var(--green)}
+button.primary{background:var(--green);color:white;border:0;border-radius:11px;padding:12px 15px;font-weight:650}button.light{background:var(--mint);color:var(--green);border:0;border-radius:10px;padding:9px 12px}form button{width:100%;margin-top:10px}
+.task{display:flex;align-items:flex-start;gap:11px;padding:13px 0;border-bottom:1px solid var(--line)}.task:last-child{border-bottom:0}.task .details{flex:1;min-width:0}.task .name{font-weight:650;overflow-wrap:anywhere}.task.done .name{text-decoration:line-through;color:var(--muted)}.tag{display:inline-block;font-size:11px;background:var(--mint);color:var(--green);padding:3px 8px;border-radius:99px;margin:4px 4px 0 0}.task .remove{background:none;border:0;color:#9a5144;padding:3px 6px}.progress{height:9px;background:#e9eeea;border-radius:99px;overflow:hidden}.progress div{height:100%;background:#479574;width:0;transition:width .2s}
+
+.calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 14px}
+.calendar-toolbar h2{margin:0;text-align:center;flex:1;font-size:17px}
+.calendar-toolbar button,.calendar-actions button{border:1px solid var(--line);background:var(--white);color:var(--ink);border-radius:10px;padding:8px 11px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.weekday{text-align:center;color:var(--muted);font-size:11px;padding:5px 0}
+.calendar-date{min-height:47px;border:1px solid var(--line);border-radius:10px;background:var(--white);color:var(--ink);padding:5px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.calendar-date.outside{opacity:.42}
+.calendar-date.selected{background:var(--green);color:#fff;border-color:var(--green)}
+.calendar-date.today:not(.selected){border-color:#479574;box-shadow:inset 0 0 0 1px #479574}
+.calendar-date .dot{width:5px;height:5px;border-radius:50%;background:#479574}
+.calendar-date.selected .dot{background:#fff}
+.calendar-date .date-number{font-size:13px}
+.calendar-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px}
+.calendar-task{display:flex;align-items:flex-start;gap:9px;padding:11px 0;border-bottom:1px solid var(--line)}
+.calendar-task:last-child{border-bottom:0}
+.calendar-task .cal-info{flex:1;min-width:0;overflow-wrap:anywhere}
+.calendar-task .cal-time{font-size:12px;color:var(--muted);margin-bottom:2px}
+.overdue{border-color:#d99a83;background:#fff6f1}
+:root[data-theme="dark"] .overdue{background:#35231e;border-color:#8b5a49}
+@media(max-width:420px){.calendar-date{min-height:40px;border-radius:8px}.calendar-date .date-number{font-size:12px}.calendar-grid{gap:3px}}
+
+.day{padding:11px;border:1px solid var(--line);border-radius:12px;margin:7px 0;background:white}.day.today{border-color:#7fb69d;background:#f0faf4}.day b{display:inline-block;min-width:90px}.goalrow{display:flex;justify-content:space-between;gap:12px;align-items:center}.hidden{display:none!important}.empty{text-align:center;padding:22px;color:var(--muted)}footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
+@media(max-width:420px){.stat{padding:11px}.stat strong{font-size:20px}.fields{grid-template-columns:1fr!important}header h1{font-size:25px}}
+</style>
+</head>
+<body>
+<header><small>YOUR PERSONAL STUDY SPACE</small><h1>StudyFlow 🌱</h1><p>Small steps. Strong habits. Big goals.</p></header>
+<div class="theme-row"><span id="themeLabel">Light mode</span><label class="theme-switch" aria-label="Toggle dark mode"><input id="themeToggle" type="checkbox" role="switch" aria-checked="false"><span class="theme-slider"></span></label></div>
+<main>
+<section class="stats">
+ <div class="stat"><strong id="doneCount">0</strong><span>Completed today</span></div>
+ <div class="stat"><strong id="allCount">0</strong><span>Total tasks</span></div>
+ <div class="stat"><strong id="streakGoal">0%</strong><span>Daily goal</span></div>
+</section>
+<nav>
+<button class="active" data-tab="tasks">✓ Tasks</button><button data-tab="calendar">▦ Calendar</button><button data-tab="goals">◎ Study goals</button>
+</nav>
+<section id="tasks" class="view">
+ <div class="panel">
+ <h2>Add a task</h2>
+ <form id="taskForm">
+ <input id="taskName" placeholder="e.g. Practice quadratic equations" required maxlength="120">
+ <div class="fields" style="margin-top:9px">
+ <select id="subject"><option>Mathematics</option><option>English</option><option>Physics</option><option>Chemistry</option><option>Biology</option><option>University research</option><option>Personal</option></select>
+ <input id="dueDate" type="date" required>
+ <input id="dueTime" type="time" aria-label="Reminder time (optional)">
+ <select id="duration"><option value="15">15 minutes</option><option value="30" selected>30 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option><option value="90">90 minutes</option></select>
+ </div><button class="primary" type="submit">＋ Add task</button>
+ </form>
+ <p class="muted">Tasks are saved in this browser on this device.</p>
+ </div>
+ <div class="panel"><h2>Today's progress</h2><div class="progress"><div id="progressBar"></div></div><p class="muted" id="progressText">Add a task to begin.</p></div>
+ <div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h2 style="margin:0">Your tasks</h2><select id="filter" style="width:auto;padding:8px"><option value="all">All tasks</option><option value="open">To do</option><option value="done">Completed</option></select></div><div id="taskList"></div></div>
+</section>
+<section id="calendar" class="view hidden">
+ <div class="panel">
+  <div class="calendar-toolbar">
+   <button id="prevMonth" aria-label="Previous month">‹</button>
+   <h2 id="calendarMonth">Month Year</h2>
+   <button id="nextMonth" aria-label="Next month">›</button>
+  </div>
+  <div class="calendar-grid" id="calendarWeekdays"></div>
+  <div class="calendar-grid" id="calendarGrid"></div>
+  <div class="calendar-actions">
+   <button id="calendarToday">Today</button>
+   <span class="muted" id="calendarSelectedLabel"></span>
+  </div>
+ </div>
+ <div class="panel">
+  <h2 id="selectedDayTitle">Tasks for this day</h2>
+  <div id="selectedDayTasks"></div>
+  <button id="addTaskForDate" class="primary" style="width:100%;margin-top:12px">＋ Add task on this date</button>
+ </div>
+ <div class="panel">
+  <h2>Overdue tasks</h2>
+  <p class="muted">Uncompleted tasks from earlier dates.</p>
+  <div id="overdueTasks"></div>
+ </div>
+</section>
+<section id="goals" class="view hidden">
+ <div class="panel"><h2>Daily study goal</h2><p class="muted">Choose how many minutes you want to study each day.</p><div class="goalrow"><label for="goalMinutes">Target (minutes/day)</label><input id="goalMinutes" type="number" min="15" max="600" step="15" style="max-width:120px"></div><button id="saveGoal" class="primary" style="width:100%;margin-top:12px">Save goal</button><hr style="border:0;border-top:1px solid var(--line);margin:18px 0"><div class="goalrow"><div><b id="goalDone">0 min</b><div class="muted">Planned study time today</div></div><b id="goalPercent">0%</b></div><div class="progress" style="margin-top:10px"><div id="goalBar"></div></div><p class="muted" id="goalMessage"></p></div>
+ <div class="panel"><h2>Study advice</h2><p>Try one focused session, take a short break, then review what you learned. A realistic daily goal is better than an impossible one.</p></div>
+</section>
+<footer>StudyFlow first version • Your data stays in this browser.</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+function setTheme(dark){
+  document.documentElement.dataset.theme=dark?'dark':'light';
+  $('themeToggle').checked=dark;
+  $('themeToggle').setAttribute('aria-checked',String(dark));
+  $('themeLabel').textContent=dark?'Dark mode':'Light mode';
+  try{localStorage.setItem('studyflow_theme',dark?'dark':'light')}catch(e){}
+}
+let savedTheme='light';
+try{savedTheme=localStorage.getItem('studyflow_theme')||'light'}catch(e){}
+setTheme(savedTheme==='dark');
+$('themeToggle').addEventListener('change',e=>setTheme(e.target.checked));
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+let tasks=[];let goal=120;
+try{tasks=JSON.parse(localStorage.getItem('studyflow_tasks')||'[]');goal=Number(localStorage.getItem('studyflow_goal')||120)}catch(e){}
+$('dueDate').value=today();$('goalMinutes').value=goal;
+let selectedDate=today();
+let calendarMonth=today().slice(0,7);
+const parseDate=date=>{const [y,m,d]=date.split('-').map(Number);return new Date(y,m-1,d)};
+const dateKey=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+const niceDate=date=>parseDate(date).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+const monthLabel=key=>{const [y,m]=key.split('-').map(Number);return new Date(y,m-1,1).toLocaleDateString(undefined,{month:'long',year:'numeric'})};
+const weekdayNames=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+$('calendarWeekdays').innerHTML=weekdayNames.map(d=>`<div class="weekday">${d}</div>`).join('');
+$('prevMonth').addEventListener('click',()=>{const [y,m]=calendarMonth.split('-').map(Number);const d=new Date(y,m-2,1);calendarMonth=dateKey(d).slice(0,7);renderCalendar()});
+$('nextMonth').addEventListener('click',()=>{const [y,m]=calendarMonth.split('-').map(Number);const d=new Date(y,m,1);calendarMonth=dateKey(d).slice(0,7);renderCalendar()});
+$('calendarToday').addEventListener('click',()=>{selectedDate=today();calendarMonth=today().slice(0,7);renderCalendar()});
+$('addTaskForDate').addEventListener('click',()=>{$('dueDate').value=selectedDate;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab==='tasks'));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.id!=='tasks'));$('taskName').focus()});
+function save(){localStorage.setItem('studyflow_tasks',JSON.stringify(tasks));localStorage.setItem('studyflow_goal',String(goal));render()}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$('taskForm').addEventListener('submit',e=>{e.preventDefault();const name=$('taskName').value.trim();if(!name)return;tasks.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,subject:$('subject').value,date:$('dueDate').value||today(),time:$('dueTime').value,duration:Number($('duration').value),done:false});$('taskName').value='';$('dueDate').value=today();$('dueTime').value='';save()});
+$('filter').addEventListener('change',render);
+$('taskList').addEventListener('change',e=>{if(e.target.matches('[data-check]')){const t=tasks.find(t=>t.id===e.target.dataset.check);if(t)t.done=e.target.checked;save()}});
+$('taskList').addEventListener('click',e=>{const b=e.target.closest('[data-remove]');if(b){tasks=tasks.filter(t=>t.id!==b.dataset.remove);save()}});
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.view').forEach(v=>v.classList.toggle('hidden',v.id!==b.dataset.tab));render()}));
+$('saveGoal').addEventListener('click',()=>{goal=Math.min(600,Math.max(15,Number($('goalMinutes').value)||120));$('goalMinutes').value=goal;save()});
+function taskHTML(t){return `<div class="task ${t.done?'done':''}"><input type="checkbox" data-check="${t.id}" ${t.done?'checked':''} aria-label="Complete ${esc(t.name)}"><div class="details"><div class="name">${esc(t.name)}</div><span class="tag">${esc(t.subject)}</span><span class="tag">${t.duration} min</span><div class="muted">${t.date===today()?'Today':esc(t.date)}${t.time?' · '+esc(t.time):''}</div>${t.time&&t.date===today()?'<div class="muted">Reminder time saved (browser notifications are not enabled in this version).</div>':''}</div><button class="remove" data-remove="${t.id}" aria-label="Delete task">Delete</button></div>`}
+function renderCalendar(){
+ $('calendarMonth').textContent=monthLabel(calendarMonth);
+ $('calendarSelectedLabel').textContent=parseDate(selectedDate).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+ const [year,month]=calendarMonth.split('-').map(Number);
+ const first=new Date(year,month-1,1);
+ const mondayOffset=(first.getDay()+6)%7;
+ const start=new Date(year,month-1,1-mondayOffset);
+ const monthTasks=tasks.reduce((acc,t)=>{(acc[t.date]??=[]).push(t);return acc},{});
+ const cells=[];
+ for(let i=0;i<42;i++){
+  const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i);
+  const key=dateKey(d), inMonth=d.getMonth()===month-1, hasTasks=(monthTasks[key]||[]).length>0;
+  cells.push(`<button class="calendar-date ${inMonth?'':'outside'} ${key===selectedDate?'selected':''} ${key===today()?'today':''}" data-calendar-date="${key}" aria-label="${niceDate(key)}${hasTasks?', has tasks':''}" aria-pressed="${key===selectedDate}"><span class="date-number">${d.getDate()}</span>${hasTasks?'<span class="dot"></span>':''}</button>`);
+ }
+ $('calendarGrid').innerHTML=cells.join('');
+ $('calendarGrid').querySelectorAll('[data-calendar-date]').forEach(b=>b.addEventListener('click',()=>{selectedDate=b.dataset.calendarDate;calendarMonth=selectedDate.slice(0,7);renderCalendar()}));
+ $('selectedDayTitle').textContent=niceDate(selectedDate);
+ const dayTasks=(monthTasks[selectedDate]||[]).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+ $('selectedDayTasks').innerHTML=dayTasks.length?dayTasks.map(t=>`<div class="calendar-task"><input type="checkbox" data-calendar-check="${t.id}" ${t.done?'checked':''} aria-label="Complete ${esc(t.name)}"><div class="cal-info"><div class="cal-time">${t.time?esc(t.time)+' · ':''}${esc(t.subject)} · ${t.duration} min</div><b style="${t.done?'text-decoration:line-through;color:var(--muted)':''}">${esc(t.name)}</b></div><button class="remove" data-calendar-remove="${t.id}" aria-label="Delete ${esc(t.name)}">×</button></div>`).join(''):'<div class="empty">No tasks planned for this day.</div>';
+ const overdue=tasks.filter(t=>t.date<today()&&!t.done).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+ $('overdueTasks').innerHTML=overdue.length?overdue.map(t=>`<div class="calendar-task"><input type="checkbox" data-calendar-check="${t.id}" aria-label="Complete ${esc(t.name)}"><div class="cal-info"><div class="cal-time">${esc(t.date)}${t.time?' · '+esc(t.time):''} · ${esc(t.subject)}</div><b>${esc(t.name)}</b></div><button class="light" data-move-today="${t.id}">Move to today</button></div>`).join(''):'<div class="empty">You have no overdue tasks. Nice work!</div>';
+}
+$('selectedDayTasks').addEventListener('change',e=>{if(e.target.matches('[data-calendar-check]')){const t=tasks.find(t=>t.id===e.target.dataset.calendarCheck);if(t)t.done=e.target.checked;save()}});
+$('overdueTasks').addEventListener('change',e=>{if(e.target.matches('[data-calendar-check]')){const t=tasks.find(t=>t.id===e.target.dataset.calendarCheck);if(t)t.done=e.target.checked;save()}});
+$('selectedDayTasks').addEventListener('click',e=>{const b=e.target.closest('[data-calendar-remove]');if(b){tasks=tasks.filter(t=>t.id!==b.dataset.calendarRemove);save()}});
+$('overdueTasks').addEventListener('click',e=>{const b=e.target.closest('[data-move-today]');if(b){const t=tasks.find(t=>t.id===b.dataset.moveToday);if(t)t.date=today();selectedDate=today();calendarMonth=today().slice(0,7);save()}});
+function render(){
+const todayTasks=tasks.filter(t=>t.date===today());const done=todayTasks.filter(t=>t.done).length;const all=tasks.length;
+$('doneCount').textContent=done;$('allCount').textContent=all;
+const todayMins=todayTasks.reduce((n,t)=>n+(t.done?t.duration:0),0);const pct=Math.min(100,Math.round(todayMins/goal*100));$('streakGoal').textContent=pct+'%';
+const taskPct=todayTasks.length?Math.round(done/todayTasks.length*100):0;$('progressBar').style.width=taskPct+'%';$('progressText').textContent=todayTasks.length?`${done} of ${todayTasks.length} tasks completed today (${taskPct}%).`:'Add a task to begin.';
+const filter=$('filter').value;const visible=tasks.filter(t=>filter==='all'||(filter==='done'?t.done:!t.done)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+$('taskList').innerHTML=visible.length?visible.map(taskHTML).join(''):'<div class="empty">No tasks here yet. Add one above.</div>';
+renderCalendar();
+$('goalDone').textContent=todayMins+' min';$('goalPercent').textContent=pct+'%';$('goalBar').style.width=pct+'%';$('goalMessage').textContent=pct>=100?'Daily study goal reached. Great work!':`${Math.max(0,goal-todayMins)} minutes left to reach your goal.`;
+}
+render();
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body></html>
